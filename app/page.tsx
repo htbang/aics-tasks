@@ -1,4 +1,23 @@
+'use client';
+
+import { useAuth } from '@/lib/auth-context';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
 export default function Home() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
+
+  if (loading) {
+    return <div className="text-center py-12">로드 중...</div>;
+  }
+
   return (
     <div className="space-y-12">
       <section className="text-center py-12">
@@ -8,16 +27,16 @@ export default function Home() {
         </p>
         <div className="flex gap-4 justify-center">
           <a
-            href="/dashboard"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+            href="/login"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition cursor-pointer"
           >
-            대시보드로 이동
+            로그인
           </a>
           <a
-            href="/settings"
-            className="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-white px-6 py-3 rounded-lg font-semibold transition"
+            href="/login"
+            className="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-white px-6 py-3 rounded-lg font-semibold transition cursor-pointer"
           >
-            설정하기
+            회원가입
           </a>
         </div>
       </section>

@@ -11,17 +11,23 @@ export async function GET(request: NextRequest) {
 
     const result = await query(
       `SELECT t.id, t.title, t.description, t.priority, t.status, t.due_date,
-              u.name as creator_name,
-              json_agg(json_build_object('id', a.id, 'assigned_to', a.assigned_to, 'user_name', u2.name)) as assignments
+              u.name as creator_name
        FROM tasks t
        LEFT JOIN users u ON t.creator_id = u.id
-       LEFT JOIN assignments a ON t.id = a.task_id
-       LEFT JOIN users u2 ON a.assigned_to = u2.id
-       GROUP BY t.id, u.name
-       ORDER BY t.due_date ASC`
+       ORDER BY COALESCE(t.due_date, NOW()) ASC`
     );
 
-    return NextResponse.json(result.rows);
+    const tasks = result.rows.map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      priority: row.priority || 'medium',
+      status: row.status || 'pending',
+      dueDate: row.due_date,
+      createdBy: row.creator_name || 'Unknown',
+    }));
+
+    return NextResponse.json({ tasks });
   } catch (error) {
     console.error('GET /api/tasks error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -42,13 +48,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    // Firebase UID로 user_id 조회
-    const userResult = await query('SELECT id FROM users WHERE firebase_uid = $1', [firebaseUid]);
-    if (userResult.rows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    // Firebase UID로 user_id 조회, 없으면 생성
+    let userResult = await query('SELECT id FROM users WHERE firebase_uid = $1', [firebaseUid]);
 
-    const userId = userResult.rows[0].id;
+    let userId;
+    if (userResult.rows.length === 0) {
+      // 새 사용자 생성
+      const createUserResult = await query(
+        'INSERT INTO users (firebase_uid, email) VALUES ($1, $2) RETURNING id',
+        [firebaseUid, firebaseUid]
+      );
+      userId = createUserResult.rows[0].id;
+    } else {
+      userId = userResult.rows[0].id;
+    }
 
     const result = await query(
       `INSERT INTO tasks (creator_id, title, description, priority, due_date)
