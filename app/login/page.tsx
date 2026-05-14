@@ -19,6 +19,11 @@ export default function Login() {
     setLoading(true);
 
     try {
+      if (!auth) {
+        setError('Firebase가 초기화되지 않았습니다.');
+        return;
+      }
+
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, email, password);
       } else {
