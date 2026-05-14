@@ -96,6 +96,10 @@ export default function Settings() {
 
   const handleLogout = async () => {
     try {
+      if (!auth) {
+        console.error('Firebase not initialized');
+        return;
+      }
       await signOut(auth);
       router.push('/login');
     } catch (err) {
