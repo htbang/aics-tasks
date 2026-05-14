@@ -91,7 +91,7 @@ export async function sendDueReminder(
 
 export async function getSlackUserList() {
   try {
-    const result = await slackClient.users.list();
+    const result = await slackClient.users.list({});
     return result.members?.map(user => ({
       id: user.id,
       name: user.name,
